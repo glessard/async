@@ -32,7 +32,7 @@ public func async(task: () -> Void)
 /// - parameter group: a `dispatch_group_t` to associate to this block execution
 /// - parameter task: a block to be executed asynchronously
 
-public func async(group group: dispatch_group_t, task: () -> Void)
+public func async(group: dispatch_group_t, task: () -> Void)
 {
   dispatch_group_async(group, dispatch_get_global_queue(qos_class_self(), 0), task)
 }
