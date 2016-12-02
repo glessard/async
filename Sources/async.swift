@@ -12,69 +12,62 @@ import Dispatch
 /// ```
 /// is simply a shortcut for
 /// ```
-/// dispatch_async(dispatch_get_global_queue(qos_class_self(), 0)) { println("In the background") }
+/// DispatchQueue.global().async { println("In the background") }
 /// ```
-/// Much less wordy.
+/// It was a bigger deal before Swift 3.0
 ///
-/// A queue or a qos_class_t can be provided as a parameter in addition to the closure.
+/// A `DispatchQoS` can be provided as a parameter in addition to the closure.
 /// When none is supplied, the global queue at the current qos class will be used.
-/// In all cases, a dispatch_group_t may be associated with the block to be executed.
+/// In all cases, a DispatchGroup may be associated with the block to be executed.
 ///
 /// - parameter task: a block to be executed asynchronously.
 
-public func async(task: () -> Void)
+public func async(task: @escaping () -> Void)
 {
-  dispatch_async(dispatch_get_global_queue(qos_class_self(), 0), task)
+  DispatchQueue.global(qos: .current).async(execute: task)
 }
 
 /// Utility shortcut for Grand Central Dispatch
 ///
-/// - parameter group: a `dispatch_group_t` to associate to this block execution
+/// - parameter group: a `DispatchGroup` to associate to this block execution
 /// - parameter task: a block to be executed asynchronously
 
-public func async(group: dispatch_group_t, task: () -> Void)
+public func async(group: DispatchGroup, task: @escaping () -> Void)
 {
-  dispatch_group_async(group, dispatch_get_global_queue(qos_class_self(), 0), task)
-}
-
-/// Utility shortcut for Grand Central Dispatch
-///
-/// - parameter qos: the quality-of-service class to associate to this block
-/// - parameter task: a block to be executed asynchronously
-
-public func async(qos: qos_class_t, task: () -> Void)
-{
-  dispatch_async(dispatch_get_global_queue(qos, 0), task)
+  DispatchQueue.global(qos: .current).async(group: group, execute: task)
 }
 
 /// Utility shortcut for Grand Central Dispatch
 ///
 /// - parameter qos: the quality-of-service class to associate to this block
-/// - parameter group: a `dispatch_group_t` to associate to this block execution
 /// - parameter task: a block to be executed asynchronously
 
-public func async(qos: qos_class_t, group: dispatch_group_t, task: () -> Void)
+public func async(qos: DispatchQoS, task: @escaping () -> Void)
 {
-  dispatch_group_async(group, dispatch_get_global_queue(qos, 0), task)
+  DispatchQueue.global(qos: qos.qosClass).async(qos: qos, execute: task)
 }
 
 /// Utility shortcut for Grand Central Dispatch
 ///
-/// - parameter queue: the `dispatch_queue_t` onto which the block should be added for execution
+/// - parameter qos: the quality-of-service class to associate to this block
+/// - parameter group: a `DispatchGroup` to associate to this block execution
 /// - parameter task: a block to be executed asynchronously
 
-public func async(queue: dispatch_queue_t, task: () -> Void)
+public func async(qos: DispatchQoS, group: DispatchGroup, task: @escaping () -> Void)
 {
-  dispatch_async(queue, task)
+  DispatchQueue.global(qos: qos.qosClass).async(group: group, qos: qos, execute: task)
 }
 
-/// Utility shortcut for Grand Central Dispatch
-///
-/// - parameter queue: the `dispatch_queue_t` onto which the block should be added for execution
-/// - parameter group: a `dispatch_group_t` to associate to this block execution
-/// - parameter task: a block to be executed asynchronously
 
-public func async(queue: dispatch_queue_t, group: dispatch_group_t, task: () -> Void)
+extension DispatchQoS.QoSClass
 {
-  dispatch_group_async(group, queue, task)
+#if os(macOS) || os(iOS) || os(tvOS) || os(watchOS)
+  fileprivate static var current: DispatchQoS.QoSClass {
+    return DispatchQoS.QoSClass(rawValue: qos_class_self()) ?? .default
+  }
+#else
+  fileprivate static var current: DispatchQoS.QoSClass {
+    return .default
+  }
+#endif
 }
